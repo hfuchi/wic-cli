@@ -1,0 +1,9 @@
+[default]
+org = default.example.com
+key = abc
+[org2]
+key = abc
+org = org2.example.com
+[org3]
+org = test3.org.com
+key = abc
