@@ -44,6 +44,15 @@ def user_delete(args):
 def apps_list(args):
     Commands(args).apps_list()
 
+def apps_get(args):
+    Commands(args).apps_get()
+
+def apps_assign(args):
+    Commands(args).apps_assign()
+
+def apps_remove(args):
+    Commands(args).apps_remove()
+
 def command_help(args):
     print(parser.parse_args([args.command, '--help']))
 
@@ -113,6 +122,22 @@ class gPayload:
 			 "description": self.name+self.idx,
 			 }
                      }
+        return json_data
+
+class app_assign_Payload:
+
+    def __init__(self,id,name):
+    	self.user_id = id
+    	self.user_name = name
+
+    def Set(self):
+        json_data = {"id": self.user_id,
+                     "scope": "USER",
+                     "credentials": {
+                        "userName": self.user_name
+                        }
+                     }
+
         return json_data
 
 class Http:
@@ -413,7 +438,7 @@ class Commands:
         dict = json.loads(data.decode("utf-8"))
 
         if(dict.get('errorCode')):
-              print("{} errorId: {}".format(dict["errorCauses"][0]["errorSummary"],dict["errorId"]))
+             print("{} errorId: {}".format(dict["errorCauses"][0]["errorSummary"],dict["errorId"]))
         else:  
              print("{} has been created, userId: {}".format(dict["profile"]["login"], dict["id"],))
 
@@ -439,19 +464,167 @@ class Commands:
 
     def apps_list(self):
 
-        url = '/api/v1/apps'
         http = Http(org_name)
         conn = http.Connect()
+
+        url = '/api/v1/apps'
         data = http.Get(conn,url)
         dict = json.loads(data.decode("utf-8"))
 
         for i in range(len(dict)):
-               print("{} {} \"{}\" ({})".format(
-                    dict[i]["id"],
-                    dict[i]["status"],
-                    dict[i]["label"],
-                    dict[i]["name"]
-                    ))
+            print("{} {} \"{}\" ({})".format(
+                 dict[i]["id"],
+                 dict[i]["status"],
+                 dict[i]["label"],
+                 dict[i]["name"]
+                 ))
+
+    def apps_get(self):
+        user_name =  self.args.user
+        app_name =  self.args.app	
+
+        http = Http(org_name)
+        conn = http.Connect()
+
+        if(user_name):
+            url = '/api/v1/users/?filter=profile.login%20eq%20%22{}%22'.format(user_name)
+            data = http.Get(conn,url)
+            dict = json.loads(data.decode("utf-8"))
+
+            if(not dict):
+              print("{} is not found".format(user_name))
+              exit(1)
+        
+            for i in range(len(dict)):
+                    if dict[i]["profile"]["login"] == user_name:
+                            user_id = dict[i]["id"]
+                            user_status = dict[i]["status"]
+
+            url = '/api/v1/apps?filter=user.id+eq+%22{}%22&expand=user/{}'.format(user_id,user_id)
+            data = http.Get(conn,url)
+            dict = json.loads(data.decode("utf-8"))
+ 
+            for i in range(len(dict)):
+                   print("{} {} \"{}\" ({})".format(
+                         dict[i]["id"],
+                         dict[i]["status"],
+                         dict[i]["label"],
+                         dict[i]["name"]
+                 ))
+
+        if(app_name):
+           url = '/api/v1/apps'
+           data = http.Get(conn,url)
+           dict = json.loads(data.decode("utf-8"))
+           for i in range(len(dict)):
+               if(dict[i]["label"] == app_name):
+                   app_id = dict[i]["id"]
+
+           url = '/api/v1/apps/{}/users'.format(app_id)
+           data = http.Get(conn,url)
+           dict = json.loads(data.decode("utf-8"))
+#           print(data.decode("utf-8"))
+           for i in range(len(dict)):
+             if(dict[i]["credentials"]):
+                print("{}".format(
+                      dict[i]["credentials"]["userName"]
+                      ))
+             else:
+                # for admin console (fixme)
+                print("user assiged {}".format(dict[i]["_links"]["user"]["href"]))
+
+
+    def apps_assign(self):
+        user_name =  self.args.user
+        app_name =  self.args.app	
+        app_already_assigned = 0
+
+        http = Http(org_name)
+        conn = http.Connect()
+
+        url = '/api/v1/users/?filter=profile.login%20eq%20%22{}%22'.format(user_name)
+        data = http.Get(conn,url)
+        dict = json.loads(data.decode("utf-8"))
+
+        if(not dict):
+            print("{} is not found".format(user_name))
+            exit(1)
+       
+        for i in range(len(dict)):
+            if dict[i]["profile"]["login"] == user_name:
+                 user_id = dict[i]["id"]
+                 user_status = dict[i]["status"]
+
+        url = '/api/v1/apps?filter=user.id+eq+%22{}%22&expand=user/{}'.format(user_id,user_id)
+        data = http.Get(conn,url)
+        dict = json.loads(data.decode("utf-8"))
+
+        for i in range(len(dict)):
+            if(dict[i]["label"] == app_name):
+              print("{} is already assigned to {}".format(user_name,app_name)) 
+              exit(1)
+
+        url = '/api/v1/apps'
+        data = http.Get(conn,url)
+        dict = json.loads(data.decode("utf-8"))
+        for i in range(len(dict)):
+            if(dict[i]["label"] == app_name):
+               app_id = dict[i]["id"]
+
+        url = '/api/v1/apps/{}/users'.format(app_id) 
+        pl = app_assign_Payload(user_id,user_name)
+        conn = http.Connect()
+        payload = json.dumps(pl.Set())
+        data = http.Post(conn,url,payload)
+        print("{} is assigned to {}".format(user_name,app_name)) 
+        # fixme
+        #dict = json.loads(data.decode("utf-8"))
+        #print(data.decode("utf-8"))
+
+    def apps_remove(self):
+        user_name =  self.args.user
+        app_name =  self.args.app	
+        app_assigned = 0
+
+        http = Http(org_name)
+        conn = http.Connect()
+
+        url = '/api/v1/users/?filter=profile.login%20eq%20%22{}%22'.format(user_name)
+        data = http.Get(conn,url)
+        dict = json.loads(data.decode("utf-8"))
+
+        if(not dict):
+            print("{} is not found".format(user_name))
+            exit(1)
+       
+        for i in range(len(dict)):
+            if dict[i]["profile"]["login"] == user_name:
+                 user_id = dict[i]["id"]
+                 user_status = dict[i]["status"]
+
+        url = '/api/v1/apps?filter=user.id+eq+%22{}%22&expand=user/{}'.format(user_id,user_id)
+        data = http.Get(conn,url)
+        dict = json.loads(data.decode("utf-8"))
+ 
+        for i in range(len(dict)):
+            if(dict[i]["label"] == app_name):
+              app_id = dict[i]["id"]
+              app_assigned = 1
+  
+        if(app_assigned == 0):
+             print("{} is not assigned to {}".format(user_name,app_name)) 
+             exit(1)
+
+        url = '/api/v1/apps/{}/users/{}'.format(app_id,user_id) 
+        data = http.Delete(conn,url)
+        if(not data):
+              print("{} is unassigned to {}".format(user_name,app_name)) 
+        else: 
+              # fixme
+              dict = json.loads(data.decode("utf-8"))
+              print(data.decode("utf-8"))
+              print("{} unable to unassigned to {}".format(user_name,app_name)) 
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(add_help=True)
@@ -511,8 +684,23 @@ if __name__ == '__main__':
     subparser_apps = parser_apps.add_subparsers()
 
     parser_apps_list = subparser_apps.add_parser('list')
-    parser_apps_list.add_argument('--full', action='store_true', help='option full')
     parser_apps_list.set_defaults(func=apps_list)
+
+    parser_apps_get = subparser_apps.add_parser('get')
+    parser_apps_get.add_argument('--full', action='store_true', help='option full')
+    parser_apps_get.add_argument('--user', action='store', help='option user')
+    parser_apps_get.add_argument('--app', action='store', help='option app')        
+    parser_apps_get.set_defaults(func=apps_get)
+
+    parser_apps_assign = subparser_apps.add_parser('assign')
+    parser_apps_assign.add_argument('--user', action='store', help='option user')
+    parser_apps_assign.add_argument('--app', action='store', help='option app')        
+    parser_apps_assign.set_defaults(func=apps_assign)
+
+    parser_apps_remove = subparser_apps.add_parser('remove')
+    parser_apps_remove.add_argument('--user', action='store', help='option user')
+    parser_apps_remove.add_argument('--app', action='store', help='option app')        
+    parser_apps_remove.set_defaults(func=apps_remove)
 
     parser_help = subparsers.add_parser('help', help='see `help -h`')
     parser_help.add_argument('command', help='command name which help is shown')
@@ -542,7 +730,7 @@ if __name__ == '__main__':
     domain = config.get('domain')
     passwd = config.get('passwd')
 
-    print("org: {}".format(org_name))
+#    print("org: {}".format(org_name))
 
     try:
         func = args.func
