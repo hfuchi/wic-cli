@@ -446,7 +446,7 @@ class Commands:
         dict = json.loads(data.decode("utf-8"))
 
         for i in range(len(dict)):
-               print("{} {} {} {}".format(
+               print("{} {} {} \"{}\"".format(
                     dict[i]["id"],
                     dict[i]["status"],
                     dict[i]["name"],
