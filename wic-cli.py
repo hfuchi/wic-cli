@@ -41,6 +41,9 @@ def user_add(args):
 def user_delete(args):
     Commands(args).user_delete()
 
+def apps_list(args):
+    Commands(args).apps_list()
+
 def command_help(args):
     print(parser.parse_args([args.command, '--help']))
 
@@ -434,6 +437,22 @@ class Commands:
         else:  
              print("{} has been created, groupId: {}".format(dict["profile"]["name"], dict["id"],))
 
+    def apps_list(self):
+
+        url = '/api/v1/apps'
+        http = Http(org_name)
+        conn = http.Connect()
+        data = http.Get(conn,url)
+        dict = json.loads(data.decode("utf-8"))
+
+        for i in range(len(dict)):
+               print("{} {} {} {}".format(
+                    dict[i]["id"],
+                    dict[i]["status"],
+                    dict[i]["name"],
+                    dict[i]["label"]
+                    ))
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(add_help=True)
     parser.add_argument('--org', action='store', help='option org')
@@ -487,6 +506,13 @@ if __name__ == '__main__':
     parser_group_delete = subparser_group.add_parser('delete')
     parser_group_delete.add_argument('--name', action='store', nargs='*', help='option name')
     parser_group_delete.set_defaults(func=group_delete)
+
+    parser_apps = subparsers.add_parser('apps', help='parser pass')
+    subparser_apps = parser_apps.add_subparsers()
+
+    parser_apps_list = subparser_apps.add_parser('list')
+    parser_apps_list.add_argument('--full', action='store_true', help='option full')
+    parser_apps_list.set_defaults(func=apps_list)
 
     parser_help = subparsers.add_parser('help', help='see `help -h`')
     parser_help.add_argument('command', help='command name which help is shown')
