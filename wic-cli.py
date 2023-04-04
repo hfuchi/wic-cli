@@ -32,6 +32,9 @@ def user_list(args):
 def user_deactivate(args):
     Commands(args).user_deactivate()
 
+def user_activate(args):
+    Commands(args).user_activate()
+
 def user_get(args):
     Commands(args).user_get()
 
@@ -339,6 +342,35 @@ class Commands:
         data = http.Post(conn,url,payload)
         dict = json.loads(data.decode("utf-8"))
 
+    def user_activate(self):
+        user_name =  self.args.name
+
+        url = '/api/v1/users/?filter=profile.login%20eq%20%22{}%22'.format(user_name)
+        http = Http(org_name)
+        conn = http.Connect()
+        data = http.Get(conn,url)
+        dict = json.loads(data.decode("utf-8"))
+
+        if(dict):
+          status = dict[0]["status"] 
+        else:
+          print("{} is not found".format(user_name))
+          exit(1)
+
+        if(status == 'ACTIVATED'):
+                 print("{} is already ACTIVATED".format(user_name))
+                 exit(1)
+
+        for i in range(len(dict)):
+                if dict[i]["profile"]["login"] == user_name:
+                        user_id = dict[i]["id"]
+                        status = dict[i]["status"]
+
+        url = '/api/v1/users/{}/lifecycle/activate?sendEmail=false'.format(user_id)
+        payload = ''
+        data = http.Post(conn,url,payload)
+        dict = json.loads(data.decode("utf-8"))
+
     def user_delete(self):
         user_name =  self.args.name
 
@@ -359,20 +391,21 @@ class Commands:
                     if dict[i]["profile"]["login"] == u:
                             user_id = dict[i]["id"]
                             user_status = dict[i]["status"]
-
-            if(not self.args.force and user_status == "ACTIVE"):
-                  print("can not delete sicne {} is ACTIVE, userId: {}".format(u,user_id))
     
             if (user_status == "DEPROVISIONED"):
                url = '/api/v1/users/{}'.format(user_id)
                data = http.Delete(conn,url)
-               dict = json.loads(data.decode("utf-8"))
-               if(dict.get('errorCode')):
-                   print("{} errorId: {}".format(dict["errorSummary"],dict["errorId"]))
+               #print(data.decode("utf-8"))
+               if(any(data)):
+                 dict = json.loads(data.decode("utf-8"))
+                 if(dict.get('errorCode')):
+                     print("{} errorId: {}".format(dict["errorSummary"],dict["errorId"]))
+                 else:
+                     print("{} ({}) has been deleted, userId: {}".format(u,user_status,user_id))
                else:
-                   print("{} has been deleted, userId: {}".format(u,user_id))
+                 print("{} ({}) has been deleted, userId: {}".format(u,user_status,user_id))
 
-            if(self.args.force and user_status == "ACTIVE"):
+            if(self.args.force and (user_status == "ACTIVE" or user_status == "STAGED" or user_status == "PROVISIONED" )):
                url = '/api/v1/users/{}/lifecycle/deactivate'.format(user_id)
                payload = ''
                data = http.Post(conn,url,payload)
@@ -386,7 +419,7 @@ class Commands:
                       print("{} errorId: {}".format(dict["errorCauses"][0]["errorSummary"],dict["errorId"]))        
                       #print("{} errorId: {}".format(dict["errorSummary"],dict["errorId"]))           
                else:
-                   print("{} has been deleted, userId: {}".format(u,user_id))
+                   print("{} ({}) has been deleted, userId: {}".format(u,user_status,user_id))
          
     def group_delete(self):
         group_name =  self.args.name
@@ -650,6 +683,10 @@ if __name__ == '__main__':
     parser_user_add.add_argument('--domain', action='store', help='option domain')
     parser_user_add.add_argument('--passwd', action='store', help='option')    
     parser_user_add.set_defaults(func=user_add)
+
+    parser_user_activate = subparser_user.add_parser('activate')
+    parser_user_activate.add_argument('--name', action='store', help='option name')
+    parser_user_activate.set_defaults(func=user_activate)
 
     parser_user_deactivate = subparser_user.add_parser('deactivate')
     parser_user_deactivate.add_argument('--name', action='store', help='option name')
