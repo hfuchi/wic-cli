@@ -405,7 +405,7 @@ class Commands:
                else:
                  print("{} ({}) has been deleted, userId: {}".format(u,user_status,user_id))
 
-            if(self.args.force and (user_status == "ACTIVE" or user_status == "STAGED" or user_status == "PROVISIONED" )):
+            if(self.args.force and (user_status == "ACTIVE" or user_status == "STAGED" or user_status == "PROVISIONED" or user_status == "RECOVERY")):
                url = '/api/v1/users/{}/lifecycle/deactivate'.format(user_id)
                payload = ''
                data = http.Post(conn,url,payload)
