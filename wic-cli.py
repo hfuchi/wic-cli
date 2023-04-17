@@ -391,7 +391,7 @@ class Commands:
                     if dict[i]["profile"]["login"] == u:
                             user_id = dict[i]["id"]
                             user_status = dict[i]["status"]
-    
+
             if (user_status == "DEPROVISIONED"):
                url = '/api/v1/users/{}'.format(user_id)
                data = http.Delete(conn,url)
@@ -405,12 +405,17 @@ class Commands:
                else:
                  print("{} ({}) has been deleted, userId: {}".format(u,user_status,user_id))
 
-            if(self.args.force and (user_status == "ACTIVE" or user_status == "STAGED" or user_status == "PROVISIONED" or user_status == "RECOVERY")):
+            if(self.args.force and (user_status == "ACTIVE" or 
+                                    user_status == "STAGED" or
+				    user_status == "PROVISIONED" or
+				    user_status == "PASSWORD_EXPIRED" or				    
+				    user_status == "RECOVERY" )):
                url = '/api/v1/users/{}/lifecycle/deactivate'.format(user_id)
                payload = ''
                data = http.Post(conn,url,payload)
                url = '/api/v1/users/{}'.format(user_id)
                data = http.Delete(conn,url)
+               #print(data.decode("utf-8"))
 
                # delete is scceeded, it will be retrun null
                if(any(data)):
