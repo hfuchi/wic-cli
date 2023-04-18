@@ -364,12 +364,19 @@ class Commands:
         for i in range(len(dict)):
                 if dict[i]["profile"]["login"] == user_name:
                         user_id = dict[i]["id"]
-                        status = dict[i]["status"]
+                        user_status = dict[i]["status"]
 
         url = '/api/v1/users/{}/lifecycle/activate?sendEmail=false'.format(user_id)
         payload = ''
         data = http.Post(conn,url,payload)
-        dict = json.loads(data.decode("utf-8"))
+        if(any(data)):
+           dict = json.loads(data.decode("utf-8"))
+           #print(data.decode("utf-8"))
+           if(dict.get('errorCode')):
+              #print("{} errorId: {}".format(dict["errorCauses"][0]["errorSummary"],dict["errorId"]))        
+              print("{} errorId: {}".format(dict["errorSummary"],dict["errorId"]))           
+           else:
+              print("{} ({}) has been activated, userId: {} activationUrl: {}".format(user_name,user_status,user_id,dict["activationUrl"]))
 
     def user_delete(self):
         user_name =  self.args.name
