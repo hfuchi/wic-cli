@@ -4,6 +4,8 @@ import argparse
 import configparser
 import os
 
+import re
+
 import requests
 import json
 
@@ -61,6 +63,30 @@ def command_help(args):
 
 def user_help(args):
     print(parser.parse_args([args.command, '--help']))
+
+class Users:
+
+    def __init__(self,data,full):
+        self.data = data
+        self.full = full
+
+    def List(self):
+        dict = json.loads(self.data.decode("utf-8"))
+        for i in range(len(dict)):
+           if(self.full):
+               print("{} {} {} {} {}".format(
+                    dict[i]["id"],
+                    dict[i]["status"],
+                    dict[i]["profile"]["login"],
+                    dict[i]["credentials"]["provider"]["type"],
+                    dict[i]["credentials"]["provider"]["name"]
+                    ))
+           else:
+               print("{} {} {}".format(
+                    dict[i]["id"],
+                    dict[i]["status"],
+                    dict[i]["profile"]["login"],
+                    ))
 
 class Headers:
 
@@ -159,9 +185,33 @@ class Http:
         h = Headers(key,'','')
         headers = h.Get()
         self.con.request('GET', self.url, '', headers)
-        r = self.con.getresponse()
-        d = r.read()
-        return d
+        gr = self.con.getresponse()
+        dr = gr.read()
+
+        url = 0
+        pattern = r'<.*?>; rel="next"'
+        for header in gr.getheaders():
+            #print(header[1])
+            matches = re.findall(pattern, header[1])
+            if matches:
+               for tmp in matches:
+                 next = tmp
+
+                 full_url_pattern = r'\<(.+?)\>'
+                 full_url_match = re.search(full_url_pattern, next)
+                 if full_url_match:
+                    full_url = full_url_match.group(1)
+
+                 api_pattern = r'api/v1/(.*)'
+                 url_match = re.search(api_pattern, full_url)
+                 if url_match:
+                     url = url_match.group(1)
+                     print(url)
+
+             #else:
+            #     print("not found")
+
+        return dr, url
 
     def Delete(self,con,url):
         self.con = con
@@ -199,57 +249,42 @@ class Commands:
     def user_list(self):
         full = self.args.full
 	
-        url = '/api/v1/groups?expand=stats'
+#        url = '/api/v1/groups?expand=stats'
         http = Http(org_name)
         conn = http.Connect()
-        data = http.Get(conn,url)
-
-        dict = json.loads(data.decode("utf-8"))
-        for i in range(len(dict)):
-               if(dict[i]["profile"]["name"] == 'Everyone'):
-                   usersCount = dict[i]["_embedded"]["stats"]["usersCount"]
-
+#        data = http.Get(conn,url)
+#
+#        dict = json.loads(data[0].decode("utf-8"))
+#        for i in range(len(dict)):
+#               if(dict[i]["profile"]["name"] == 'Everyone'):
+#                   usersCount = dict[i]["_embedded"]["stats"]["usersCount"]
+#
+        usersCount = 200
         cmd = 'GET'
         url = '/api/v1/users?limit='.format(usersCount)
         data = http.Get(conn,url)
+        u = Users(data[0],full)
+        u.List()
 
-        dict = json.loads(data.decode("utf-8"))
-        for i in range(len(dict)):
-           if(full):
-               print("{} {} {} {} {}".format(
-                    dict[i]["id"],
-                    dict[i]["status"],
-                    dict[i]["profile"]["login"],
-                    dict[i]["credentials"]["provider"]["type"],
-                    dict[i]["credentials"]["provider"]["name"]
-                    ))
-           else:
-               print("{} {} {}".format(
-                    dict[i]["id"],
-                    dict[i]["status"],
-                    dict[i]["profile"]["login"],
-                    ))
+        while(data[1]):
+           cmd = 'GET'
+           url = '/api/v1/{}'.format(data[1])
+           data = http.Get(conn,url)
+           u = Users(data[0],full)
+           u.List()
 
         cmd = 'GET'
         url = '/api/v1/users?filter=status%20eq%20%22DEPROVISIONED%22&limit={}'.format(usersCount)
         data = http.Get(conn,url)
+        u = Users(data[0],full)
+        u.List()
 
-        dict = json.loads(data.decode("utf-8"))
-        for i in range(len(dict)):
-           if(full):
-               print("{} {} {} {} {}".format(
-                    dict[i]["id"],
-                    dict[i]["status"],
-                    dict[i]["profile"]["login"],
-                    dict[i]["credentials"]["provider"]["type"],
-                    dict[i]["credentials"]["provider"]["name"]
-                    ))
-           else:
-               print("{} {} {}".format(
-                    dict[i]["id"],
-                    dict[i]["status"],
-                    dict[i]["profile"]["login"],
-                    ))
+        while(data[1]):
+           cmd = 'GET'
+           url = '/api/v1/{}'.format(data[1])
+           data = http.Get(conn,url)
+           u = Users(data[0],full)
+           u.List()
 
     def group_list(self):
         full = self.args.full
