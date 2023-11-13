@@ -289,7 +289,7 @@ class Commands:
         http = Http(org_name)
         conn = http.Connect()
         data = http.Get(conn,url)
-        dict = json.loads(data.decode("utf-8"))
+        dict = json.loads(data[0].decode("utf-8"))
 
         for i in range(len(dict)):
             if(full):
@@ -313,7 +313,7 @@ class Commands:
         http = Http(org_name)
         conn = http.Connect()
         data = http.Get(conn,url)
-        dict = json.loads(data.decode("utf-8"))
+        dict = json.loads(data[0].decode("utf-8"))
 
         for i in range(len(dict)):
                 if dict[i]["profile"]["name"] == group_name:
@@ -332,7 +332,7 @@ class Commands:
         http = Http(org_name)
         conn = http.Connect()
         data = http.Get(conn,url)
-        dict = json.loads(data.decode("utf-8"))
+        dict = json.loads(data[0].decode("utf-8"))
 
         for i in range(len(dict)):
             if dict[i]["profile"]["login"] == user_name:
@@ -351,7 +351,7 @@ class Commands:
         http = Http(org_name)
         conn = http.Connect()
         data = http.Get(conn,url)
-        dict = json.loads(data.decode("utf-8"))
+        dict = json.loads(data[0].decode("utf-8"))
 
         if(dict):
           status = dict[0]["status"] 
@@ -371,7 +371,7 @@ class Commands:
         url = '/api/v1/users/{}/lifecycle/deactivate'.format(user_id)
         payload = ''
         data = http.Post(conn,url,payload)
-        dict = json.loads(data.decode("utf-8"))
+        dict = json.loads(data[0].decode("utf-8"))
 
     def user_activate(self):
         user_name =  self.args.name
@@ -380,7 +380,7 @@ class Commands:
         http = Http(org_name)
         conn = http.Connect()
         data = http.Get(conn,url)
-        dict = json.loads(data.decode("utf-8"))
+        dict = json.loads(data[0].decode("utf-8"))
 
         if(dict):
           status = dict[0]["status"] 
@@ -401,7 +401,7 @@ class Commands:
         payload = ''
         data = http.Post(conn,url,payload)
         if(any(data)):
-           dict = json.loads(data.decode("utf-8"))
+           dict = json.loads(data[0].decode("utf-8"))
            #print(data.decode("utf-8"))
            if(dict.get('errorCode')):
               #print("{} errorId: {}".format(dict["errorCauses"][0]["errorSummary"],dict["errorId"]))        
@@ -419,7 +419,7 @@ class Commands:
 
             url = '/api/v1/users/?filter=profile.login%20eq%20%22{}%22'.format(u)
             data = http.Get(conn,url)
-            dict = json.loads(data.decode("utf-8"))
+            dict = json.loads(data[0].decode("utf-8"))
 
             if(not dict):
               print("{} is not found".format(u))
@@ -435,7 +435,7 @@ class Commands:
                data = http.Delete(conn,url)
                #print(data.decode("utf-8"))
                if(any(data)):
-                 dict = json.loads(data.decode("utf-8"))
+                 dict = json.loads(data[0].decode("utf-8"))
                  if(dict.get('errorCode')):
                      print("{} errorId: {}".format(dict["errorSummary"],dict["errorId"]))
                  else:
@@ -457,7 +457,7 @@ class Commands:
 
                # delete is scceeded, it will be retrun null
                if(any(data)):
-                   dict = json.loads(data.decode("utf-8"))
+                   dict = json.loads(data[0].decode("utf-8"))
                    if(dict.get('errorCode')):
                       print("{} errorId: {}".format(dict["errorCauses"][0]["errorSummary"],dict["errorId"]))        
                       #print("{} errorId: {}".format(dict["errorSummary"],dict["errorId"]))           
@@ -474,7 +474,7 @@ class Commands:
 
             url = '/api/v1/groups?search=profile.name%20eq%20%22{}%22'.format(g)
             data = http.Get(conn,url)
-            dict = json.loads(data.decode("utf-8"))
+            dict = json.loads(data[0].decode("utf-8"))
 
             if(not dict):
               print("{} is not found".format(g))
@@ -545,7 +545,7 @@ class Commands:
 
         url = '/api/v1/apps'
         data = http.Get(conn,url)
-        dict = json.loads(data.decode("utf-8"))
+        dict = json.loads(data[0].decode("utf-8"))
 
         for i in range(len(dict)):
             print("{} {} \"{}\" ({})".format(
@@ -565,7 +565,7 @@ class Commands:
         if(user_name):
             url = '/api/v1/users/?filter=profile.login%20eq%20%22{}%22'.format(user_name)
             data = http.Get(conn,url)
-            dict = json.loads(data.decode("utf-8"))
+            dict = json.loads(data[0].decode("utf-8"))
 
             if(not dict):
               print("{} is not found".format(user_name))
@@ -578,7 +578,7 @@ class Commands:
 
             url = '/api/v1/apps?filter=user.id+eq+%22{}%22&expand=user/{}'.format(user_id,user_id)
             data = http.Get(conn,url)
-            dict = json.loads(data.decode("utf-8"))
+            dict = json.loads(data[0].decode("utf-8"))
  
             for i in range(len(dict)):
                    print("{} {} \"{}\" ({})".format(
@@ -591,14 +591,14 @@ class Commands:
         if(app_name):
            url = '/api/v1/apps'
            data = http.Get(conn,url)
-           dict = json.loads(data.decode("utf-8"))
+           dict = json.loads(data[0].decode("utf-8"))
            for i in range(len(dict)):
                if(dict[i]["label"] == app_name):
                    app_id = dict[i]["id"]
 
            url = '/api/v1/apps/{}/users'.format(app_id)
            data = http.Get(conn,url)
-           dict = json.loads(data.decode("utf-8"))
+           dict = json.loads(data[0].decode("utf-8"))
 #           print(data.decode("utf-8"))
            for i in range(len(dict)):
              if(dict[i]["credentials"]):
@@ -620,7 +620,7 @@ class Commands:
 
         url = '/api/v1/users/?filter=profile.login%20eq%20%22{}%22'.format(user_name)
         data = http.Get(conn,url)
-        dict = json.loads(data.decode("utf-8"))
+        dict = json.loads(data[0].decode("utf-8"))
 
         if(not dict):
             print("{} is not found".format(user_name))
@@ -633,7 +633,7 @@ class Commands:
 
         url = '/api/v1/apps?filter=user.id+eq+%22{}%22&expand=user/{}'.format(user_id,user_id)
         data = http.Get(conn,url)
-        dict = json.loads(data.decode("utf-8"))
+        dict = json.loads(data[0].decode("utf-8"))
 
         for i in range(len(dict)):
             if(dict[i]["label"] == app_name):
@@ -642,7 +642,7 @@ class Commands:
 
         url = '/api/v1/apps'
         data = http.Get(conn,url)
-        dict = json.loads(data.decode("utf-8"))
+        dict = json.loads(data[0].decode("utf-8"))
         for i in range(len(dict)):
             if(dict[i]["label"] == app_name):
                app_id = dict[i]["id"]
@@ -667,7 +667,7 @@ class Commands:
 
         url = '/api/v1/users/?filter=profile.login%20eq%20%22{}%22'.format(user_name)
         data = http.Get(conn,url)
-        dict = json.loads(data.decode("utf-8"))
+        dict = json.loads(data[0].decode("utf-8"))
 
         if(not dict):
             print("{} is not found".format(user_name))
@@ -680,7 +680,7 @@ class Commands:
 
         url = '/api/v1/apps?filter=user.id+eq+%22{}%22&expand=user/{}'.format(user_id,user_id)
         data = http.Get(conn,url)
-        dict = json.loads(data.decode("utf-8"))
+        dict = json.loads(data[0].decode("utf-8"))
  
         for i in range(len(dict)):
             if(dict[i]["label"] == app_name):
