@@ -206,10 +206,6 @@ class Http:
                  url_match = re.search(api_pattern, full_url)
                  if url_match:
                      url = url_match.group(1)
-                     print(url)
-
-             #else:
-            #     print("not found")
 
         return dr, url
 
