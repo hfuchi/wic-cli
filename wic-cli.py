@@ -46,17 +46,17 @@ def user_add(args):
 def user_delete(args):
     Commands(args).user_delete()
 
-def apps_list(args):
-    Commands(args).apps_list()
+def app_list(args):
+    Commands(args).app_list()
 
-def apps_get(args):
-    Commands(args).apps_get()
+def app_get(args):
+    Commands(args).app_get()
 
-def apps_assign(args):
-    Commands(args).apps_assign()
+def app_assign(args):
+    Commands(args).app_assign()
 
-def apps_remove(args):
-    Commands(args).apps_remove()
+def app_remove(args):
+    Commands(args).app_remove()
 
 def command_help(args):
     print(parser.parse_args([args.command, '--help']))
@@ -64,13 +64,13 @@ def command_help(args):
 def user_help(args):
     print(parser.parse_args([args.command, '--help']))
 
-class Users:
+class List:
 
     def __init__(self,data,full):
         self.data = data
         self.full = full
 
-    def List(self):
+    def User(self):
         dict = json.loads(self.data.decode("utf-8"))
         for i in range(len(dict)):
            if(self.full):
@@ -87,6 +87,36 @@ class Users:
                     dict[i]["status"],
                     dict[i]["profile"]["login"],
                     ))
+
+    def Group(self):
+        dict = json.loads(self.data.decode("utf-8"))
+        for i in range(len(dict)):
+            if(self.full):
+              print("{} {} {} usersCount:{}".format(
+              #print("{} {} {} usersCount:{} appsCount:{} groupPushMappingsCount:{} hasAdminPrivilege:{}".format(
+              dict[i]["id"],
+              dict[i]["profile"]["name"],
+              dict[i]["type"],
+              dict[i]["_embedded"]["stats"]["usersCount"],
+              #dict[i]["_embedded"]["stats"]["appsCount"],
+              #dict[i]["_embedded"]["stats"]["groupPushMappingsCount"],
+              #dict[i]["_embedded"]["stats"]["hasAdminPrivilege"]
+              ))
+            else:
+              print("{} {}".format(dict[i]["id"],dict[i]["profile"]["name"]))
+
+    def App(self):
+       dict = json.loads(self.data.decode("utf-8"))
+       for i in range(len(dict)):
+            if(self.full):
+                pass
+            else:    
+              print("{} {} \"{}\" ({})".format(
+                 dict[i]["id"],
+                 dict[i]["status"],
+                 dict[i]["label"],
+                 dict[i]["name"]
+                 ))
 
 class Headers:
 
@@ -196,12 +226,10 @@ class Http:
             if matches:
                for tmp in matches:
                  next = tmp
-
                  full_url_pattern = r'\<(.+?)\>'
                  full_url_match = re.search(full_url_pattern, next)
                  if full_url_match:
                     full_url = full_url_match.group(1)
-
                  api_pattern = r'api/v1/(.*)'
                  url_match = re.search(api_pattern, full_url)
                  if url_match:
@@ -259,28 +287,28 @@ class Commands:
         cmd = 'GET'
         url = '/api/v1/users?limit='.format(usersCount)
         data = http.Get(conn,url)
-        u = Users(data[0],full)
-        u.List()
+        l = List(data[0],full)
+        l.User()
 
         while(data[1]):
            cmd = 'GET'
            url = '/api/v1/{}'.format(data[1])
            data = http.Get(conn,url)
-           u = Users(data[0],full)
-           u.List()
+           l = List(data[0],full)
+           l.User()
 
         cmd = 'GET'
         url = '/api/v1/users?filter=status%20eq%20%22DEPROVISIONED%22&limit={}'.format(usersCount)
         data = http.Get(conn,url)
-        u = Users(data[0],full)
-        u.List()
+        l = List(data[0],full)
+        l.User()
 
         while(data[1]):
            cmd = 'GET'
            url = '/api/v1/{}'.format(data[1])
            data = http.Get(conn,url)
-           u = Users(data[0],full)
-           u.List()
+           l = List(data[0],full)
+           l.User()
 
     def group_list(self):
         full = self.args.full
@@ -289,22 +317,15 @@ class Commands:
         http = Http(org_name)
         conn = http.Connect()
         data = http.Get(conn,url)
-        dict = json.loads(data[0].decode("utf-8"))
+        l = List(data[0],full)
+        l.Group()
 
-        for i in range(len(dict)):
-            if(full):
-              print("{} {} {} usersCount:{}".format(
-              #print("{} {} {} usersCount:{} appsCount:{} groupPushMappingsCount:{} hasAdminPrivilege:{}".format(
-              dict[i]["id"],
-              dict[i]["profile"]["name"],
-              dict[i]["type"],
-              dict[i]["_embedded"]["stats"]["usersCount"],
-              #dict[i]["_embedded"]["stats"]["appsCount"],
-              #dict[i]["_embedded"]["stats"]["groupPushMappingsCount"],
-              #dict[i]["_embedded"]["stats"]["hasAdminPrivilege"]
-              ))
-            else:
-              print("{} {}".format(dict[i]["id"],dict[i]["profile"]["name"]))
+        while(data[1]):
+           cmd = 'GET'
+           url = '/api/v1/{}'.format(data[1])
+           data = http.Get(conn,url)
+           l = List(data[0],full)
+           l.Group()
 
     def group_get(self):
         group_name = self.args.name
@@ -332,8 +353,8 @@ class Commands:
         http = Http(org_name)
         conn = http.Connect()
         data = http.Get(conn,url)
-        dict = json.loads(data[0].decode("utf-8"))
 
+        dict = json.loads(data[0].decode("utf-8"))
         for i in range(len(dict)):
             if dict[i]["profile"]["login"] == user_name:
                print("{} {} {} {} {}".format(
@@ -500,6 +521,7 @@ class Commands:
             index = self.args.index
         else:
             index = ''
+
         firstname = self.args.firstname
         lastname = self.args.lastname
         domain = self.args.domain
@@ -538,24 +560,26 @@ class Commands:
         else:  
              print("{} has been created, groupId: {}".format(dict["profile"]["name"], dict["id"],))
 
-    def apps_list(self):
+    def app_list(self):
 
+        full = self.args.full
         http = Http(org_name)
         conn = http.Connect()
-
-        url = '/api/v1/apps'
+        appsCount = 20
+        url = '/api/v1/apps?limit='.format(appsCount)
         data = http.Get(conn,url)
-        dict = json.loads(data[0].decode("utf-8"))
 
-        for i in range(len(dict)):
-            print("{} {} \"{}\" ({})".format(
-                 dict[i]["id"],
-                 dict[i]["status"],
-                 dict[i]["label"],
-                 dict[i]["name"]
-                 ))
+        l = List(data[0],full)
+        l.App()
 
-    def apps_get(self):
+        while(data[1]):
+           cmd = 'GET'
+           url = '/api/v1/{}'.format(data[1])
+           data = http.Get(conn,url)
+           l = List(data[0],full)
+           l.App()
+
+    def app_get(self):
         user_name =  self.args.user
         app_name =  self.args.app	
 
@@ -610,7 +634,7 @@ class Commands:
                 print("user assiged {}".format(dict[i]["_links"]["user"]["href"]))
 
 
-    def apps_assign(self):
+    def app_assign(self):
         user_name =  self.args.user
         app_name =  self.args.app	
         app_already_assigned = 0
@@ -657,7 +681,7 @@ class Commands:
         #dict = json.loads(data.decode("utf-8"))
         #print(data.decode("utf-8"))
 
-    def apps_remove(self):
+    def app_remove(self):
         user_name =  self.args.user
         app_name =  self.args.app	
         app_assigned = 0
@@ -760,27 +784,28 @@ if __name__ == '__main__':
     parser_group_delete.add_argument('--name', action='store', nargs='*', help='option name')
     parser_group_delete.set_defaults(func=group_delete)
 
-    parser_apps = subparsers.add_parser('apps', help='parser pass')
-    subparser_apps = parser_apps.add_subparsers()
+    parser_app = subparsers.add_parser('app', help='parser pass')
+    subparser_app = parser_app.add_subparsers()
 
-    parser_apps_list = subparser_apps.add_parser('list')
-    parser_apps_list.set_defaults(func=apps_list)
+    parser_app_list = subparser_app.add_parser('list')
+    parser_app_list.add_argument('--full', action='store_true', help='option full')
+    parser_app_list.set_defaults(func=app_list)
 
-    parser_apps_get = subparser_apps.add_parser('get')
-    parser_apps_get.add_argument('--full', action='store_true', help='option full')
-    parser_apps_get.add_argument('--user', action='store', help='option user')
-    parser_apps_get.add_argument('--app', action='store', help='option app')        
-    parser_apps_get.set_defaults(func=apps_get)
+    parser_app_get = subparser_app.add_parser('get')
+    parser_app_get.add_argument('--full', action='store_true', help='option full')
+    parser_app_get.add_argument('--user', action='store', help='option user')
+    parser_app_get.add_argument('--app', action='store', help='option app')        
+    parser_app_get.set_defaults(func=app_get)
 
-    parser_apps_assign = subparser_apps.add_parser('assign')
-    parser_apps_assign.add_argument('--user', action='store', help='option user')
-    parser_apps_assign.add_argument('--app', action='store', help='option app')        
-    parser_apps_assign.set_defaults(func=apps_assign)
+    parser_app_assign = subparser_app.add_parser('assign')
+    parser_app_assign.add_argument('--user', action='store', help='option user')
+    parser_app_assign.add_argument('--app', action='store', help='option app')        
+    parser_app_assign.set_defaults(func=app_assign)
 
-    parser_apps_remove = subparser_apps.add_parser('remove')
-    parser_apps_remove.add_argument('--user', action='store', help='option user')
-    parser_apps_remove.add_argument('--app', action='store', help='option app')        
-    parser_apps_remove.set_defaults(func=apps_remove)
+    parser_app_remove = subparser_app.add_parser('remove')
+    parser_app_remove.add_argument('--user', action='store', help='option user')
+    parser_app_remove.add_argument('--app', action='store', help='option app')        
+    parser_app_remove.set_defaults(func=app_remove)
 
     parser_help = subparsers.add_parser('help', help='see `help -h`')
     parser_help.add_argument('command', help='command name which help is shown')
