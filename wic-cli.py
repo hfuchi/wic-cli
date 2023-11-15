@@ -571,7 +571,7 @@ class Commands:
 
         while(data[1]):
            cmd = 'GET'
-           url = '/api/v1/{}'.format(data[1])
+           url = data[1]
            data = http.Get(conn,url)
            l = List(data[0],full)
            l.App()
