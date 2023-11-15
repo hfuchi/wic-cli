@@ -225,15 +225,12 @@ class Http:
             matches = re.findall(pattern, header[1])
             if matches:
                for tmp in matches:
+                 #print(tmp)
                  next = tmp
-                 full_url_pattern = r'\<(.+?)\>'
-                 full_url_match = re.search(full_url_pattern, next)
-                 if full_url_match:
-                    full_url = full_url_match.group(1)
-                 api_pattern = r'api/v1/(.*)'
-                 url_match = re.search(api_pattern, full_url)
+                 url_pattern = r'\<.*(/api/v1/.+?)\>'
+                 url_match = re.search(url_pattern, next)
                  if url_match:
-                     url = url_match.group(1)
+                    url = url_match.group(1)
 
         return dr, url
 
@@ -292,7 +289,7 @@ class Commands:
 
         while(data[1]):
            cmd = 'GET'
-           url = '/api/v1/{}'.format(data[1])
+           url = data[1]
            data = http.Get(conn,url)
            l = List(data[0],full)
            l.User()
@@ -305,7 +302,7 @@ class Commands:
 
         while(data[1]):
            cmd = 'GET'
-           url = '/api/v1/{}'.format(data[1])
+           url = data[1]
            data = http.Get(conn,url)
            l = List(data[0],full)
            l.User()
@@ -322,7 +319,7 @@ class Commands:
 
         while(data[1]):
            cmd = 'GET'
-           url = '/api/v1/{}'.format(data[1])
+           url = data[1]
            data = http.Get(conn,url)
            l = List(data[0],full)
            l.Group()
