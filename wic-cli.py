@@ -498,32 +498,44 @@ class Commands:
         conn = http.Connect()
 
         if (not group_id):
+            print("tttt")
             for g in group_name:
+                print("{}".format(g))
                 url = '/api/v1/groups?search=profile.name%20eq%20%22{}%22'.format(g)
                 data = http.Get(conn,url)
                 dict = json.loads(data[0].decode("utf-8"))
 
                 if(not dict):
                   print("{} is not found".format(g))
-                  exit(1)
+                  continue
 
                 for i in range(len(dict)):
                     if dict[i]["profile"]["name"] == g:
-                       #print("debug id {},".format(group_id))
+                       print("debug id {},".format(g))
                        group_id = dict[i]["id"]
-   
-        for gid in group_id:
-            url = '/api/v1/groups/{}'.format(gid)
-            data = http.Delete(conn,url)
-            #print(data.decode("utf-8"))
+                       url = '/api/v1/groups/{}'.format(group_id)
+                       data = http.Delete(conn,url)
 
-            # delete is scceeded, it will be retrun null
-            if(any(data)):
-               dict = json.loads(data.decode("utf-8"))
-               if(dict.get('errorCode')):
-                  print("{} {} errorId: {}".format(dict["errorCode"],dict["errorSummary"],dict["errorId"]))
-            else:
-               print("{} has been deleted, groupId: {}".format(gid,gid))
+                       # delete is scceeded, it will be retrun null
+                       if(any(data)):
+                            dict = json.loads(data.decode("utf-8"))
+                            if(dict.get('errorCode')):
+                                print("{} {} errorId: {}".format(dict["errorCode"],dict["errorSummary"],dict["errorId"]))
+                       else:
+                            print("{} has been deleted, groupId: {}".format(g,group_id))
+        else:  
+           for gid in group_id:
+               url = '/api/v1/groups/{}'.format(gid)
+               data = http.Delete(conn,url)
+               #print(data.decode("utf-8"))
+
+               # delete is scceeded, it will be retrun null
+               if(any(data)):
+                   dict = json.loads(data.decode("utf-8"))
+                   if(dict.get('errorCode')):
+                      print("{} {} errorId: {}".format(dict["errorCode"],dict["errorSummary"],dict["errorId"]))
+               else:
+                   print("{} has been deleted, groupId: {}".format(gid,gid))
 
     def user_add(self):
         if(self.args.index):
