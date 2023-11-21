@@ -498,7 +498,6 @@ class Commands:
         conn = http.Connect()
 
         if (not group_id):
-            print("tttt")
             for g in group_name:
                 print("{}".format(g))
                 url = '/api/v1/groups?search=profile.name%20eq%20%22{}%22'.format(g)
@@ -511,7 +510,7 @@ class Commands:
 
                 for i in range(len(dict)):
                     if dict[i]["profile"]["name"] == g:
-                       print("debug id {},".format(g))
+                       #print("debug id {},".format(g))
                        group_id = dict[i]["id"]
                        url = '/api/v1/groups/{}'.format(group_id)
                        data = http.Delete(conn,url)
