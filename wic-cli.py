@@ -74,19 +74,20 @@ class List:
         dict = json.loads(self.data.decode("utf-8"))
         for i in range(len(dict)):
            if(self.full):
-               print("{} {} {} {} {}".format(
+               print("{} {} {} {} {} {}".format(
                     dict[i]["id"],
                     dict[i]["status"],
                     dict[i]["profile"]["login"],
                     dict[i]["credentials"]["provider"]["type"],
-                    dict[i]["credentials"]["provider"]["name"]
+                    dict[i]["credentials"]["provider"]["name"],
+                    dict[i]["lastLogin"]                   
                     ))
            else:
                print("{} {} {}".format(
                     dict[i]["id"],
                     dict[i]["status"],
                     dict[i]["profile"]["login"],
-                    ))
+                     ))
 
     def Group(self):
         dict = json.loads(self.data.decode("utf-8"))
@@ -483,35 +484,46 @@ class Commands:
                    print("{} ({}) has been deleted, userId: {}".format(u,user_status,user_id))
          
     def group_delete(self):
-        group_name =  self.args.name
+        if(self.args.name):
+            group_name = self.args.name
+        else:
+            group_name = ''
+          
+        if(self.args.id):
+            group_id = self.args.id
+        else:
+            group_id = ''
           
         http = Http(org_name)
         conn = http.Connect()
 
-        for g in group_name:
+        if (not group_id):
+            for g in group_name:
+                url = '/api/v1/groups?search=profile.name%20eq%20%22{}%22'.format(g)
+                data = http.Get(conn,url)
+                dict = json.loads(data[0].decode("utf-8"))
 
-            url = '/api/v1/groups?search=profile.name%20eq%20%22{}%22'.format(g)
-            data = http.Get(conn,url)
-            dict = json.loads(data[0].decode("utf-8"))
+                if(not dict):
+                  print("{} is not found".format(g))
+                  exit(1)
 
-            if(not dict):
-              print("{} is not found".format(g))
-              continue
-
-            for i in range(len(dict)):
+                for i in range(len(dict)):
                     if dict[i]["profile"]["name"] == g:
+                       #print("debug id {},".format(group_id))
                        group_id = dict[i]["id"]
    
-            url = '/api/v1/groups/{}'.format(group_id)
+        for gid in group_id:
+            url = '/api/v1/groups/{}'.format(gid)
             data = http.Delete(conn,url)
+            #print(data.decode("utf-8"))
 
             # delete is scceeded, it will be retrun null
             if(any(data)):
                dict = json.loads(data.decode("utf-8"))
                if(dict.get('errorCode')):
-                  print("{} errorId: {}".format(dict["errorCauses"][0]["errorSummary"],dict["errorId"]))
+                  print("{} {} errorId: {}".format(dict["errorCode"],dict["errorSummary"],dict["errorId"]))
             else:
-               print("{} has been deleted, userId: {}".format(g,group_id))
+               print("{} has been deleted, groupId: {}".format(gid,gid))
 
     def user_add(self):
         if(self.args.index):
@@ -779,6 +791,7 @@ if __name__ == '__main__':
 
     parser_group_delete = subparser_group.add_parser('delete')
     parser_group_delete.add_argument('--name', action='store', nargs='*', help='option name')
+    parser_group_delete.add_argument('--id', action='store', nargs='*', help='option id')    
     parser_group_delete.set_defaults(func=group_delete)
 
     parser_app = subparsers.add_parser('app', help='parser pass')
